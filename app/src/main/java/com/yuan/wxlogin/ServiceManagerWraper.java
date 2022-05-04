@@ -37,8 +37,6 @@ public class ServiceManagerWraper {
             Field mPmField = pm.getClass().getDeclaredField("mPM");
             mPmField.setAccessible(true);
             mPmField.set(pm, proxy);
-            android.os.Process.killProcess(0);
-            System.exit(0);
         }catch (Exception e){
             Log.d("jw", "hook pms error:"+ Log.getStackTraceString(e));
         }
