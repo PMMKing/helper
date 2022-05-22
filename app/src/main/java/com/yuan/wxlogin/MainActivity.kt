@@ -5,10 +5,20 @@ import android.content.Intent
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Button
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.tencent.mm.opensdk.modelmsg.SendAuth
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
@@ -18,49 +28,85 @@ import java.security.MessageDigest
 
 class MainActivity : AppCompatActivity() {
 
+    var showTvText = mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-//        sign()
         (getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager?)?.apply {
             connectionInfo?.ipAddress?.let {
                 showTv(intToIp(it))
             }
         }
-
-        tv_test.setOnClickListener {
+        setContent {
+            GuidePage()
         }
+    }
 
-        tv_apps.setOnClickListener {
-            startActivity(Intent(this@MainActivity, AppListActivity::class.java))
-        }
-
-        tv_login.setOnClickListener {
-            val req = SendAuth.Req()
-            req.scope = "snsapi_userinfo"
-            req.state = "wechat_sdk_demo_test"
-            MainApp.createWXAPI?.sendReq(req)
-        }
-
-        tv_adb.setOnClickListener {
-            try {
-                exec("setprop service.adb.tcp.port 5555 \nstop adbd \nstart adbd\nexit\n")
-            } catch (e: Exception) {
-                e.printStackTrace()
+    @Preview("guide")
+//    @Preview("guide - big", fontScale = 1f)
+    @Composable
+    private fun GuidePage() {
+        Column(
+            modifier = Modifier
+                .background(Color.Black)
+                .padding(20.dp)
+                .fillMaxHeight()
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.Bottom
+        ) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(showTvText.value, color = Color.Green)
             }
+            Button(
+                {
+                    sign()
+                },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                content = { Text(text = "WX TEST", color = Color.Green) }
+            )
+            Button(
+                {
+                    startActivity(Intent(this@MainActivity, AppListActivity::class.java))
+                },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                content = { Text(text = "安装列表", color = Color.Green) })
+            Button(
+                {
+                    val req = SendAuth.Req()
+                    req.scope = "snsapi_userinfo"
+                    req.state = "wechat_sdk_demo_test"
+                    MainApp.createWXAPI?.sendReq(req)
+                },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                content = { Text(text = "WX Login", color = Color.Green) })
+            Button(
+                {
+                    try {
+                        exec("setprop service.adb.tcp.port 5555 \nstop adbd \nstart adbd\nexit\n")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                content = { Text(text = "Start Adb", color = Color.Green) })
         }
-
-        lifecycle.addObserver(object : LifecycleEventObserver {
-            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                Log.d("WWWWWWWWWW", source.toString() + event)
-            }
-        })
     }
 
     private fun sign() {
         try {
-            val packageInfo = packageManager.getPackageInfo("com.brush.fun", 64)
+            val packageInfo = packageManager.getPackageInfo("com.tencent.mm", 64)
             val sign = packageInfo.signatures[0]
             showTv(sign.toCharsString())
             showTv(
@@ -83,17 +129,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun showTv(o: Any?) {
         o.let {
-            tv_show.text = "${o.toString()}\n${tv_show.text}"
+            showTvText.value = "${o.toString()}\n${showTvText.value}"
             Log.d("WWWWWWWWWW", o.toString() ?: "")
         }
     }
-
-    fun Any.logd(any: Any?) {
-        any?.let {
-            Log.d("HHHHHH", toString())
-        }
-    }
-
 
     private fun exec(s: String) {
         var process: Process? = null
