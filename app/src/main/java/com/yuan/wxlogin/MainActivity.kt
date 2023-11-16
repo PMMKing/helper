@@ -1,9 +1,22 @@
 package com.yuan.wxlogin
 
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothGattServerCallback
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothManager
+import android.bluetooth.le.AdvertiseData
+import android.bluetooth.le.AdvertiseSettings
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Bundle
+import android.os.ParcelUuid
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +37,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.util.UUID
 
 
 class MainActivity : AppCompatActivity() {
@@ -61,6 +75,24 @@ class MainActivity : AppCompatActivity() {
             ) {
                 Text(showTvText.value, color = Color.Green)
             }
+            Button(
+                {
+                    suportWX()
+                },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                content = { Text(text = "写运动", color = Color.Green) }
+            )
+            Button(
+                {
+                    readWX()
+                },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                content = { Text(text = "读蓝牙", color = Color.Green) }
+            )
             Button(
                 {
                     sign()
@@ -104,9 +136,176 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private fun suportWX() {
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?
+        val serviceUUID = UUID.fromString("0000fee7-0000-1000-8000-00805f9b34fb")
+        val charactUUID = UUID.fromString("0000fec9-0000-1000-8000-00805f9b34fb")
+        val charactUUID1 = UUID.fromString("0000fea1-0000-1000-8000-00805f9b34fb")
+        val charactUUID2 = UUID.fromString("0000fea2-0000-1000-8000-00805f9b34fb")
+
+
+        // 初始化BLE适配器
+        val bluetoothAdapter = bluetoothManager?.adapter
+
+// 初始化GATT服务器
+        val bluetoothGattServer = bluetoothManager?.openGattServer(this, object : BluetoothGattServerCallback() {
+            // GATT服务器回调方法
+
+            override fun onConnectionStateChange(device: BluetoothDevice?, status: Int, newState: Int) {
+                Log.e("EEEEEEEEEE", "onConnectionStateChange $device $status $newState")
+            }
+
+            override fun onServiceAdded(status: Int, service: BluetoothGattService?) {
+                Log.e("EEEEEEEEEE", "onServiceAdded $service $status")
+            }
+
+            override fun onCharacteristicReadRequest(
+                device: BluetoothDevice?,
+                requestId: Int,
+                offset: Int,
+                characteristic: BluetoothGattCharacteristic?
+            ) {
+                // 处理读请求
+                Log.e("EEEEEEEEEE", "onCharacteristicReadRequest  $device $requestId $offset $characteristic ")
+            }
+
+            override fun onCharacteristicWriteRequest(
+                device: BluetoothDevice?,
+                requestId: Int,
+                characteristic: BluetoothGattCharacteristic?,
+                preparedWrite: Boolean,
+                responseNeeded: Boolean,
+                offset: Int,
+                value: ByteArray?
+            ) {
+                // 处理写请求
+                Log.e(
+                    "EEEEEEEEEE",
+                    "onCharacteristicWriteRequest $device $requestId $characteristic $preparedWrite $responseNeeded $offset $value"
+                )
+
+            }
+
+            override fun onDescriptorReadRequest(
+                device: BluetoothDevice?,
+                requestId: Int,
+                offset: Int,
+                descriptor: BluetoothGattDescriptor?
+            ) {
+                Log.e("EEEEEEEEEE", "onDescriptorReadRequest  $device $requestId $offset $descriptor ")
+            }
+
+            override fun onDescriptorWriteRequest(
+                device: BluetoothDevice?,
+                requestId: Int,
+                descriptor: BluetoothGattDescriptor?,
+                preparedWrite: Boolean,
+                responseNeeded: Boolean,
+                offset: Int,
+                value: ByteArray?
+            ) {
+                Log.e(
+                    "EEEEEEEEEE",
+                    "onDescriptorWriteRequest $device $requestId $descriptor $preparedWrite $responseNeeded $offset $value"
+                )
+            }
+
+            override fun onExecuteWrite(device: BluetoothDevice?, requestId: Int, execute: Boolean) {
+                Log.e("EEEEEEEEEE", "onExecuteWrite $device $requestId $execute")
+            }
+
+            override fun onNotificationSent(device: BluetoothDevice?, status: Int) {
+                Log.e("EEEEEEEEEE", "onNotificationSent $device $status")
+            }
+
+            override fun onMtuChanged(device: BluetoothDevice?, mtu: Int) {
+                Log.e("EEEEEEEEEE", "onMtuChanged $mtu")
+            }
+
+            override fun onPhyUpdate(device: BluetoothDevice?, txPhy: Int, rxPhy: Int, status: Int) {
+                Log.e("EEEEEEEEEE", "onPhyUpdate $device $txPhy $rxPhy $status")
+            }
+
+            override fun onPhyRead(device: BluetoothDevice?, txPhy: Int, rxPhy: Int, status: Int) {
+                Log.e("EEEEEEEEEE", "onPhyRead $device $txPhy $rxPhy $status")
+            }
+
+        })
+        val gattService = BluetoothGattService(serviceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+// 创建特征
+        val gattCharacteristic1 = BluetoothGattCharacteristic(
+            charactUUID1,
+            BluetoothGattCharacteristic.PROPERTY_READ and BluetoothGattCharacteristic.PROPERTY_WRITE,
+            BluetoothGattCharacteristic.PERMISSION_READ and BluetoothGattCharacteristic.PERMISSION_WRITE
+        )
+// 创建特征
+        val gattCharacteristic2 = BluetoothGattCharacteristic(
+            charactUUID2,
+            BluetoothGattCharacteristic.PROPERTY_READ and BluetoothGattCharacteristic.PROPERTY_WRITE,
+            BluetoothGattCharacteristic.PERMISSION_READ and BluetoothGattCharacteristic.PERMISSION_WRITE
+        )
+// 将特征添加到服务中
+        gattService.addCharacteristic(gattCharacteristic1)
+        gattService.addCharacteristic(gattCharacteristic2)
+// 将服务添加到GATT服务器中
+        bluetoothGattServer?.addService(gattService)
+
+        //初始化广播设置
+        //初始化广播设置
+        val advertiseSettings = AdvertiseSettings.Builder() //设置广播模式，以控制广播的功率和延迟。
+            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER) //发射功率级别
+            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH) //不得超过180000毫秒。值为0将禁用时间限制。
+            .setTimeout(3000) //设置是否可以连接
+            .setConnectable(false)
+            .build()
+        //初始化广播包
+        val advertiseData =  AdvertiseData.Builder()
+            //设置广播设备名称
+            .setIncludeDeviceName(true)
+            //设置发射功率级别
+            .setIncludeDeviceName(true)
+            .build();
+
+//初始化扫描响应包
+        val scanResponseData = AdvertiseData.Builder()
+            //隐藏广播设备名称
+            .setIncludeDeviceName(false)
+            //隐藏发射功率级别
+            .setIncludeDeviceName(false)
+            //设置广播的服务`UUID`
+            .addServiceUuid(ParcelUuid(serviceUUID))
+            .addServiceData(ParcelUuid(charactUUID1),)
+            .addServiceData(ParcelUuid(charactUUID2),)
+            //设置厂商数据
+            .addManufacturerData(0x11,hexStrToByte(mData))
+            .build();
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun readWX() {
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?
+        val serviceUUID = UUID.fromString("0000fee7-0000-1000-8000-00805f9b34fb")
+        val charactUUID1 = UUID.fromString("0000fea1-0000-1000-8000-00805f9b34fb")
+        val charactUUID2 = UUID.fromString("0000fea2-0000-1000-8000-00805f9b34fb")
+
+        bluetoothManager?.adapter?.bluetoothLeScanner?.startScan(object : ScanCallback() {
+            @SuppressLint("MissingPermission")
+            override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                super.onScanResult(callbackType, result)
+                Log.e("EEEEEEEEEEEE", "$callbackType $result ${result?.device?.name}")
+
+//                result?.device?.connectGatt(this@MainActivity, false, object : BluetoothGattCallback() {
+//
+//                })
+            }
+        })
+    }
+
     private fun sign() {
         try {
-            val packageInfo = packageManager.getPackageInfo("com.tencent.mm", 64)
+            val packageInfo = packageManager.getPackageInfo("com.tencent.mm", PackageManager.GET_SIGNATURES)
             val sign = packageInfo.signatures[0]
             showTv(sign.toCharsString())
             showTv(
@@ -149,7 +348,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun intToIp(ipInt: Int): String? {
+    fun intToIp(ipInt: Int): String {
         val sb = StringBuilder()
         sb.append(ipInt and 0xFF).append(".")
         sb.append(ipInt shr 8 and 0xFF).append(".")
